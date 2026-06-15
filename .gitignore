@@ -1,0 +1,12 @@
+
+# Configurações locais e senhas (CRÍTICO)
+.env
+
+# Ambiente Virtual do Python
+venv/
+__pycache__/
+*.pyc
+
+# Arquivos do VS Code e do sistema
+.vscode/
+.DS_Store
