@@ -58,5 +58,22 @@ class SolicitacaoResponse(BaseModel):
     descricao: str
     status: StatusEnum
 
+    model_config = {
+    "from_attributes": True
+}
+# SCHEMAS PARA MORADORES (Onde o n8n e o Painel vão atuar)
+
+# Dados necessários para cadastrar um morador
+class MoradorCreate(BaseModel):
+    condominio_id: int
+    nome: str = Field(..., min_length=3, max_length=100, examples=["Carlos Silva"])
+    bloco: str = Field(..., min_length=1, max_length=20, examples=["Bloco B"])
+    apartamento: str = Field(..., min_length=1, max_length=20, examples=["Apto 104"])
+    whatsapp: str = Field(..., min_length=10, max_length=20, examples=["5511999998888"])
+
+# Como o morador será retornado pela API (já com o ID do banco)
+class MoradorResponse(MoradorCreate):
+    id: int
+
     class Config:
-        from_attributes = True
+        from_attributes = True        

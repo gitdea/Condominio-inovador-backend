@@ -2,7 +2,8 @@
 from fastapi import FastAPI
 from app.database import engine
 from app.models import tabelas
-from app.routers import condominios, prestadores, chamados # Importa as rotas novas
+# AJUSTADO: Incluído 'moradores' na importação das rotas
+from app.routers import condominios, prestadores, chamados, moradores 
 
 # Cria as tabelas no PostgreSQL automaticamente
 tabelas.Base.metadata.create_all(bind=engine)
@@ -17,6 +18,8 @@ app = FastAPI(
 app.include_router(condominios.router)
 app.include_router(prestadores.router)
 app.include_router(chamados.router)
+# ADICIONADO: Inclui a rota de moradores na API
+app.include_router(moradores.router) 
 
 @app.get("/")
 def home():
