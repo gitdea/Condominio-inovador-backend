@@ -13,7 +13,7 @@ def cadastrar_prestador(prestador: esquemas.PrestadorCreate, db: Session = Depen
     # Verifica se o condomínio informado existe
     condominio = db.query(tabelas.Condominio).filter(tabelas.Condominio.id == prestador.condominio_id).first()
     if not condominio:
-        raise HTTPException(status_code=44, detail="Condomínio não encontrado.")
+        raise HTTPException(status_code=404, detail="Condomínio não encontrado.")
     
     novo_prestador = tabelas.Prestador(**prestador.model_dump(), avaliacao_media=5) # Começa com nota 5
     db.add(novo_prestador)
