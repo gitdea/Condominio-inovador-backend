@@ -10,16 +10,22 @@ class StatusEnum(str, Enum):
     cancelado = "Cancelado"
     concluido = "Concluído com sucesso"
 
-# SCHEMAS PARA CONDOMÍNIO 
-# Dados necessários para cadastrar um condomínio
+# Dados necessários para cadastrar um condomínio (Aqui pedimos e-mail e senha)
 class CondominioCreate(BaseModel):
     nome: str = Field(..., min_length=3, max_length=100, examples=["Condomínio Vista Verde"])
     cnpj: str = Field(..., min_length=14, max_length=18, examples=["12.345.678/0001-99"])
     endereco: str = Field(..., min_length=10, max_length=255, examples=["Rua Flores, 123 - Centro"])
+    # ADICIONADOS PARA LOGIN:
+    email: EmailStr = Field(..., examples=["sindico@vistaverde.com"]) # Valida automaticamente se é um e-mail real
+    senha: str = Field(..., min_length=6, max_length=100, examples=["senha123"])
 
-# Como o condomínio será retornado pela API (já com o ID gerado pelo banco)
-class CondominioResponse(CondominioCreate):
+# Como o condomínio será retornado pela API (PROTEGIDO: NUNCA retorna a senha)
+class CondominioResponse(BaseModel):
     id: int
+    nome: str
+    cnpj: str
+    endereco: str
+    email: EmailStr
 
     class Config:
         from_attributes = True
@@ -59,10 +65,10 @@ class SolicitacaoResponse(BaseModel):
     status: StatusEnum
 
     model_config = {
-    "from_attributes": True
-}
-# SCHEMAS PARA MORADORES (Onde o n8n e o Painel vão atuar)
+        "from_attributes": True
+    }
 
+# SCHEMAS PARA MORADORES (Onde o n8n e o Painel vão atuar)
 # Dados necessários para cadastrar um morador
 class MoradorCreate(BaseModel):
     condominio_id: int
@@ -76,4 +82,4 @@ class MoradorResponse(MoradorCreate):
     id: int
 
     class Config:
-        from_attributes = True        
+        from_attributes = True

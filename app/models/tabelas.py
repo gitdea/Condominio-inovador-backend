@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
 
-# 1. TABELA DE CONDOMÍNIOS
+# 1. TABELA DE CONDOMÍNIOS (ATUALIZADA PARA SUPORTAR LOGIN)
 class Condominio(Base):
     __tablename__ = "condominios"
 
@@ -12,14 +12,17 @@ class Condominio(Base):
     nome = Column(String(100), nullable=False)
     cnpj = Column(String(18), unique=True, nullable=False, index=True)
     endereco = Column(String(255), nullable=False)
+    
+    # NOVOS CAMPOS PARA O SÍNDICO LOGAR
+    email = Column(String(100), unique=True, nullable=False, index=True)
+    senha = Column(String(255), nullable=False) # Aqui vai a senha criptografada!
+    
     data_cadastro = Column(DateTime, default=datetime.utcnow)
 
-    # Relacionamentos (Para o SQLAlchemy saber quem está ligado a quem)
+    # Relacionamentos
     prestadores = relationship("Prestador", back_populates="condominio", cascade="all, delete-orphan")
     solicitacoes = relationship("Solicitacao", back_populates="condominio", cascade="all, delete-orphan")
-    # ADICIONADO: Relacionamento com moradores
     moradores = relationship("Morador", back_populates="condominio", cascade="all, delete-orphan")
-
 
 # 1.5 NOVO - TABELA DE MORADORES
 class Morador(Base):

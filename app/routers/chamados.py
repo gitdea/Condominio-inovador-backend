@@ -32,3 +32,8 @@ def atualizar_status_chamado(chamado_id: int, dados: esquemas.SolicitacaoUpdateS
     # DICA: É aqui que no futuro colocamos o disparo para o webhook do n8n avisar o WhatsApp!
     
     return chamado
+
+@router.get("/", response_model=list[esquemas.SolicitacaoResponse])
+def listar_todos_chamados(db: Session = Depends(get_db)):
+    chamados = db.query(tabelas.Solicitacao).all()
+    return chamados    

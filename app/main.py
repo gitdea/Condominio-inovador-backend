@@ -1,9 +1,9 @@
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app.models import tabelas
-# AJUSTADO: Incluído 'moradores' na importação das rotas
-from app.routers import condominios, prestadores, chamados, moradores 
+from app.routers import condominios, prestadores, chamados, moradores, auth  # ADICIONADO: auth
 
 # Cria as tabelas no PostgreSQL automaticamente
 tabelas.Base.metadata.create_all(bind=engine)
@@ -14,11 +14,20 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CONFIGURAÇÃO DO CORS (Obrigatório para o seu painel conseguir logar!)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Em produção, substitua pelo link do seu painel
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Inclui as rotas na API
+app.include_router(auth.router)          # ADICIONADO: Rota de login (/auth/login)
 app.include_router(condominios.router)
 app.include_router(prestadores.router)
 app.include_router(chamados.router)
-# ADICIONADO: Inclui a rota de moradores na API
 app.include_router(moradores.router) 
 
 @app.get("/")
