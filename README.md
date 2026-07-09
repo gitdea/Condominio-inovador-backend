@@ -1,29 +1,73 @@
-# 🏢 Condominio Inovador Backend
 
-O Condominio Inovador Backend é uma API estratégica desenvolvida para a gestão operacional e automação de condomínios inteligentes. O sistema atua como o núcleo de controle (Back-end), conectando-se a um banco de dados relacional para gerenciar com segurança o cadastro de condomínios, moradores, prestadores de serviço e a abertura de chamados.
+
+# 🏢 Condomínio Inovador 
+
+O **Condomínio Inovador** é um ecossistema completo voltado para a gestão operacional, segurança e automação de condomínios inteligentes. O sistema é composto por uma API robusta de alta performance (Back-end) integrada a um banco de dados relacional e protegida por autenticação moderna, além de um painel administrativo intuitivo (Front-end/Dashboard) projetado para o dia a dia do síndico.
 
 ---
 
-## 🚀 Funcionalidades
+## 🚀 Funcionalidades Chave
 
-* **Gestão Multitenant:** Cadastro e controle de múltiplos condomínios com validação única de CNPJ.
-* **Pronto para Automação (n8n Ready):** Endpoints estruturados e otimizados para fácil integração com fluxos de automação e agentes de IA.
-* **Busca Otimizada de Moradores:** Consulta rápida através do número de WhatsApp para identificação instantânea de moradores.
-* **Catálogo de Prestadores:** Registro de profissionais parceiros vinculados aos condomínios com controle de avaliação.
-* **Controle de Chamados:** Abertura e atualização cirúrgica do ciclo de vida de ordens de serviço (Iniciado, Em andamento, Concluído).
-* **Documentação Automática:** Interface interativa (Swagger UI) integrada para testes em tempo real de todas as rotas.
-  
+* **Autenticação Segura (JWT):** Sistema de login profissional utilizando criptografia de senhas (`bcrypt`) e emissão de Tokens JWT (JSON Web Tokens) com tempo de expiração dinâmico.
+* **Gestão Multitenant:** Cadastro e controle isolado de múltiplos condomínios com validações rigorosas de CNPJ.
+* **Controle de Chamados em Tempo Real:** Abertura, monitoramento e atualização cirúrgica do ciclo de vida de ordens de serviço (Iniciado, Em andamento, Concluído) refletidas instantaneamente no banco.
+* **Preparado para Integração com n8n:** O sistema foi desenvolvido com endpoints padronizados e organizados estrategicamente para facilitar o acoplamento futuro em fluxos de automação do n8n e agentes de IA.
+* **Catálogo de Prestadores:** Registro organizado de profissionais parceiros vinculados aos condomínios por categoria de especialidade.
+* **Interface do Síndico (Dashboard):** Painel interativo com navegação por abas para busca, gerenciamento e visualização de dados via tabelas integradas.
+* **Documentação Automática:** Roteamento com interface interativa (Swagger UI) integrada no FastAPI para testes em tempo real de todos os endpoints.
+
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 * **Linguagem:** Python 3.13
-* **Framework Web:** FastAPI
+* **Framework Web (API):** FastAPI
+* **Interface / Frontend:** Streamlit
 * **Base de Dados:** PostgreSQL
 * **ORM / Conexão:** SQLAlchemy
+* **Segurança:** PyJWT & Passlib (Bcrypt)
+* **Configurações:** `python-dotenv` para gerenciamento seguro de variáveis de ambiente
 
 ---
 
-## 👤 Desenvolvedora
+## 🔑 Boas Práticas de Segurança e Arquitetura
+O projeto foi estruturado seguindo padrões rigorosos de desenvolvimento de software:
+* **Isolamento de Credenciais:** Chaves críticas como `SECRET_KEY` e tempo de expiração de tokens são gerenciadas fora do código-fonte através de arquivos `.env` e protegidas via `.gitignore`.
+* **Separação de Camadas:** Arquitetura limpa dividida em Roteadores (`routers`), Modelos de Banco (`models`), Esquemas de Validação (`schemas`) e o Painel Visual (`dashboard.py`).
+* **Políticas de CORS:** Configuração de middlewares para permitir a comunicação fluida e segura entre o painel e o servidor da API.
 
-* **Andrea Da Cruz Leonardo** 
+---
+
+## 🔧 Como Executar o Projeto (Desenvolvimento Local)
+
+### 1. Configurar as Variáveis de Ambiente
+Crie um arquivo chamado `.env` na raiz do seu projeto e insira suas configurações confidenciais:
+
+SECRET_KEY="sua_chave_secreta_super_segura_e_longa"
+
+ALGORITHM="HS256"
+
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+---
+
+2. Rodar o Backend (FastAPI)
+
+Com o seu ambiente virtual ativo e as dependências instaladas, inicialize o servidor Uvicorn:
+
+uvicorn app.main:app --reload
+
+---
+
+3. Rodar o Dashboard (Streamlit)
+   
+Em outro terminal (também com a venv ativa), initialize o painel visual do síndico:
+
+streamlit run dashboard.py
+
+---
+
+👤 Desenvolvedora
+Andrea Da Cruz Leonardo 
+
+Desenvolvendo soluções inteligentes, seguras e prontas para o futuro da automação.
