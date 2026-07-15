@@ -19,9 +19,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 # Carrega as variáveis do arquivo .env
 load_dotenv()
 
-# Carrega as variáveis do arquivo .env
-load_dotenv()
-
 SECRET_KEY = os.getenv("SECRET_KEY", "chave_padrao_caso_nao_encontre_o_env")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 
