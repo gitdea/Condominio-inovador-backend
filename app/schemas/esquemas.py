@@ -1,7 +1,8 @@
 
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, Dict, Any
 from enum import Enum
+from datetime import datetime
 
 # Define os status que o chamado pode ter
 class StatusEnum(str, Enum):
@@ -68,6 +69,7 @@ class SolicitacaoResponse(BaseModel):
         "from_attributes": True
     }
 
+
 # SCHEMAS PARA MORADORES (Onde o n8n e o Painel vão atuar)
 # Dados necessários para cadastrar um morador
 class MoradorCreate(BaseModel):
@@ -80,6 +82,25 @@ class MoradorCreate(BaseModel):
 # Como o morador será retornado pela API (já com o ID do banco)
 class MoradorResponse(MoradorCreate):
     id: int
+
+    class Config:
+        from_attributes = True
+
+
+# SCHEMAS PARA AUDITORIA 
+# Usado para enviar logs manualmente se necessário
+class AuditLogCreate(BaseModel):
+    condominio_id: int
+    usuario_responsavel: str = Field(..., examples=["sindico@vistaverde.com", "Sistema n8n"])
+    acao: str = Field(..., examples=["CRIAR", "ATUALIZAR_STATUS", "DELETAR"])
+    tabela_afetada: str = Field(..., examples=["solicitacoes", "moradores", "prestadores"])
+    registro_id: Optional[int] = Field(None, examples=[12])
+    detalhes: Optional[Dict[str, Any]] = Field(None, examples=[{"status_antigo": "Iniciado", "status_novo": "Em andamento"}])
+
+# Como a API vai retornar o log de auditoria ao consultar
+class AuditLogResponse(AuditLogCreate):
+    id: int
+    data_hora: datetime
 
     class Config:
         from_attributes = True
