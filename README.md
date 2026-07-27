@@ -9,6 +9,7 @@ O **Condomínio Inovador** é um ecossistema completo voltado para a gestão ope
 ## 🚀 Funcionalidades Chave
 
 * **Autenticação Segura (JWT):** Sistema de login profissional utilizando criptografia de senhas (`bcrypt`) e emissão de Tokens JWT (JSON Web Tokens) com tempo de expiração dinâmico.
+* **Sistema de Auditoria Interna (Audit Logs):** Registra e rastreia em banco de dados eventos críticos de segurança e operações (como tentativas de login com sucesso ou falha, com detalhes de quem executou, ação realizada, tabela afetada e horário).
 * **Gestão Multitenant:** Cadastro e controle isolado de múltiplos condomínios com validações rigorosas de CNPJ.
 * **Controle de Chamados em Tempo Real:** Abertura, monitoramento e atualização cirúrgica do ciclo de vida de ordens de serviço (Iniciado, Em andamento, Concluído) refletidas instantaneamente no banco.
 * **Preparado para Integração com n8n:** O sistema foi desenvolvido com endpoints padronizados e organizados estrategicamente para facilitar o acoplamento futuro em fluxos de automação do n8n e agentes de IA.
@@ -35,6 +36,7 @@ O projeto foi estruturado seguindo padrões rigorosos de desenvolvimento de soft
 * **Isolamento de Credenciais:** Chaves críticas como `SECRET_KEY` e tempo de expiração de tokens são gerenciadas fora do código-fonte através de arquivos `.env` e protegidas via `.gitignore`.
 * **Separação de Camadas:** Arquitetura limpa dividida em Roteadores (`routers`), Modelos de Banco (`models`), Esquemas de Validação (`schemas`) e o Painel Visual (`dashboard.py`).
 * **Políticas de CORS:** Configuração de middlewares para permitir a comunicação fluida e segura entre o painel e o servidor da API.
+* **Trilha de Auditoria (Audit Trail):** Rastreabilidade total das interações no sistema, garantindo visibilidade em tentativas de acesso incorretas ou fraudes.
 
 ---
 
