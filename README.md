@@ -1,12 +1,12 @@
 
 
-# 🏢 Condomínio Inovador 
+# Condomínio Inovador 
 
 O **Condomínio Inovador** é um ecossistema completo voltado para a gestão operacional, segurança e automação de condomínios inteligentes. O sistema é composto por uma API robusta de alta performance (Back-end) integrada a um banco de dados relacional e protegida por autenticação moderna, além de um painel administrativo intuitivo (Front-end/Dashboard) projetado para o dia a dia do síndico.
 
 ---
 
-## 🚀 Funcionalidades Chave
+## Funcionalidades Chave
 
 * **Autenticação Segura (JWT):** Sistema de login profissional utilizando criptografia de senhas (`bcrypt`) e emissão de Tokens JWT (JSON Web Tokens) com tempo de expiração dinâmico.
 * **Sistema de Auditoria Interna (Audit Logs):** Registra e rastreia em banco de dados eventos críticos de segurança e operações (como tentativas de login com sucesso ou falha, com detalhes de quem executou, ação realizada, tabela afetada e horário).
@@ -20,7 +20,7 @@ O **Condomínio Inovador** é um ecossistema completo voltado para a gestão ope
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 * **Linguagem:** Python 3.13
 * **Framework Web (API):** FastAPI
@@ -33,7 +33,7 @@ O **Condomínio Inovador** é um ecossistema completo voltado para a gestão ope
 
 ---
 
-## 🔑 Boas Práticas de Segurança e Arquitetura
+## Boas Práticas de Segurança e Arquitetura
 O projeto foi estruturado seguindo padrões rigorosos de desenvolvimento de software:
 * **Isolamento de Credenciais:** Chaves críticas como `SECRET_KEY` e tempo de expiração de tokens são gerenciadas fora do código-fonte através de arquivos `.env` e protegidas via `.gitignore`.
 * **Separação de Camadas:** Arquitetura limpa dividida em Roteadores (`routers`), Modelos de Banco (`models`), Esquemas de Validação (`schemas`) e o Painel Visual (`dashboard.py`).
@@ -42,7 +42,7 @@ O projeto foi estruturado seguindo padrões rigorosos de desenvolvimento de soft
 
 ---
 
-## 🔧 Como Executar o Projeto (Desenvolvimento Local)
+## Como Executar o Projeto (Desenvolvimento Local)
 
 ### 1. Configurar as Variáveis de Ambiente
 Crie um arquivo chamado `.env` na raiz do seu projeto e insira suas configurações confidenciais:
@@ -71,7 +71,7 @@ streamlit run dashboard.py
 
 ---
 
-## 🐳 Execução com Docker
+## Execução com Docker
 
 O projeto já conta com arquivos de configuração para rodar a aplicação e o banco PostgreSQL em contêineres isolados:
 
@@ -81,7 +81,7 @@ docker compose up -d
 ---
 
 
-👤 Desenvolvedora
+Desenvolvedora
 Andrea Da Cruz Leonardo 
 
 Desenvolvendo soluções inteligentes, seguras e prontas para o futuro da automação.
