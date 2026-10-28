@@ -1,46 +1,44 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
 from app.models import tabelas
 from app.schemas import esquemas
-from passlib.context import CryptContext
+# ALTERAÇÃO: reaproveita a função de senha do auth.py (antes havia um segundo CryptContext aqui) e a
+# dependência que identifica o condomínio logado.
+from app.routers.auth import gerar_senha_criptografada, obter_condominio_atual
 
 router = APIRouter(prefix="/condominios", tags=["Condomínios"])
 
-# Configuração do hash de senha (Bcrypt)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Rota 1: Criar Condomínio (Com Auditoria)
+# Rota 1: Criar Condomínio (cadastro público: é assim que um condomínio novo entra no sistema)
 @router.post("/", response_model=esquemas.CondominioResponse, status_code=status.HTTP_201_CREATED)
 def criar_condominio(condominio: esquemas.CondominioCreate, db: Session = Depends(get_db)):
-    # 1. Verifica se o CNPJ já está cadastrado
+    # 1. Verifica se o CNPJ já está cadastrado (o schema já devolve o CNPJ validado e formatado)
     db_condominio = db.query(tabelas.Condominio).filter(tabelas.Condominio.cnpj == condominio.cnpj).first()
     if db_condominio:
         raise HTTPException(status_code=400, detail="CNPJ já cadastrado.")
-    
-    # 2. Verifica se o E-mail já está cadastrado
+
+    # 2. Verifica se o e-mail já está cadastrado
     db_email = db.query(tabelas.Condominio).filter(tabelas.Condominio.email == condominio.email).first()
     if db_email:
         raise HTTPException(status_code=400, detail="E-mail já cadastrado.")
-    
-    # 3. Transforma os dados do Pydantic em dicionário
+
+    # 3. Criptografia da senha
     dados_condominio = condominio.model_dump()
-    
-    # 4. CRIPTOGRAFIA DA SENHA
-    dados_condominio["senha"] = pwd_context.hash(dados_condominio["senha"])
-    
-    # 5. Salva no banco de dados
+    dados_condominio["senha"] = gerar_senha_criptografada(dados_condominio["senha"])
+
+    # 4. Salva no banco de dados
     novo_condominio = tabelas.Condominio(**dados_condominio)
     db.add(novo_condominio)
     db.commit()
     db.refresh(novo_condominio)
 
-    # 6. LOG DE AUDITORIA: Registro de criação da conta do condomínio
+    # 5. Log de auditoria (não guarda a senha)
     log_auditoria = tabelas.AuditLog(
         condominio_id=novo_condominio.id,
-        usuario_responsavel=novo_condominio.email, # E-mail do síndico que criou
+        usuario_responsavel=novo_condominio.email,
         acao="CRIAR_CONDOMINIO",
         tabela_afetada="condominios",
         registro_id=novo_condominio.id,
@@ -56,24 +54,29 @@ def criar_condominio(condominio: esquemas.CondominioCreate, db: Session = Depend
     return novo_condominio
 
 
-# Rota 2: Listar Condomínios (Sem auditoria, pois é apenas leitura GET)
-@router.get("/", response_model=List[esquemas.CondominioResponse])
-def listar_condominios(db: Session = Depends(get_db)):
-    return db.query(tabelas.Condominio).all()
+# Rota 2: Dados do condomínio logado
+# ALTERAÇÃO (isolamento): no lugar de "GET /" que listava TODOS os condomínios (com e-mails), agora cada
+# condomínio vê apenas os próprios dados.
+@router.get("/me", response_model=esquemas.CondominioResponse)
+def meus_dados(condominio: tabelas.Condominio = Depends(obter_condominio_atual)):
+    return condominio
 
 
-# Rota 3: Consultar os Logs de Auditoria do Condomínio
-@router.get("/{condominio_id}/auditoria", response_model=List[esquemas.AuditLogResponse])
-def listar_auditoria_condominio(condominio_id: int, db: Session = Depends(get_db)):
-    # 1. Verifica se o condomínio existe
-    condominio = db.query(tabelas.Condominio).filter(tabelas.Condominio.id == condominio_id).first()
-    if not condominio:
-        raise HTTPException(status_code=404, detail="Condomínio não encontrado.")
-
-    # 2. Busca todos os registros de auditoria ordenados do mais recente para o mais antigo
-    logs = db.query(tabelas.AuditLog)\
-             .filter(tabelas.AuditLog.condominio_id == condominio_id)\
-             .order_by(tabelas.AuditLog.data_hora.desc())\
-             .all()
-             
-    return logs
+# Rota 3: Logs de auditoria do condomínio logado
+# ALTERAÇÃO (isolamento): antes era /{condominio_id}/auditoria, e qualquer pessoa lia o log de qualquer
+# condomínio. Agora o condomínio vem do token. Também ganhou paginação (limite e deslocamento).
+@router.get("/me/auditoria", response_model=List[esquemas.AuditLogResponse])
+def listar_auditoria(
+    limite: int = Query(50, ge=1, le=200),
+    deslocamento: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    condominio: tabelas.Condominio = Depends(obter_condominio_atual),
+):
+    return (
+        db.query(tabelas.AuditLog)
+        .filter(tabelas.AuditLog.condominio_id == condominio.id)
+        .order_by(tabelas.AuditLog.data_hora.desc())
+        .offset(deslocamento)
+        .limit(limite)
+        .all()
+    )

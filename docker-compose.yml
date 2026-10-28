@@ -1,6 +1,4 @@
 
-version: '3.8'
-
 services:
   web:
     build: .
@@ -10,10 +8,18 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+    # ALTERAÇÃO: a API agora NÃO sobe sem a SECRET_KEY. O env_file entrega ao contêiner as variáveis do
+    # seu arquivo .env (como a SECRET_KEY), em vez de depender de o arquivo aparecer por causa do volume.
+    env_file:
+      - .env
     environment:
+      # A variável abaixo tem prioridade sobre a do .env, que aponta para o PostgreSQL da sua máquina.
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/condominio_db
+    # ALTERAÇÃO: antes, "depends_on: db" só esperava o contêiner do banco LIGAR, e não ficar PRONTO. Como a
+    # API cria as tabelas assim que sobe, ela podia cair por não achar o banco. Agora espera ele responder.
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:15-alpine
@@ -23,8 +29,16 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=condominio_db
+    # ALTERAÇÃO: a porta de fora mudou de 5432 para 5433. O PostgreSQL da sua máquina já usa a 5432, e as
+    # duas não podem usar a mesma porta. Dentro do Docker, a API continua falando com o banco na 5432.
     ports:
-      - "5432:5432"
+      - "5433:5432"
+    # ALTERAÇÃO: teste de saúde. Pergunta ao PostgreSQL se ele já aceita conexões.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d condominio_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

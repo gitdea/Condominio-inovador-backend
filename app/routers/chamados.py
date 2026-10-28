@@ -4,32 +4,49 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import tabelas
 from app.schemas import esquemas
+# ALTERAÇÃO: dependência que identifica o condomínio logado pelo token.
+from app.routers.auth import obter_condominio_atual
 
 router = APIRouter(prefix="/chamados", tags=["Chamados / Solicitações"])
 
-# Rota 1: Criar Chamado (Com Auditoria)
+
+# Rota 1: Criar Chamado (com auditoria)
 @router.post("/", response_model=esquemas.SolicitacaoResponse, status_code=status.HTTP_201_CREATED)
-def abrir_solicitacao(solicitacao: esquemas.SolicitacaoCreate, db: Session = Depends(get_db)):
+def abrir_solicitacao(
+    solicitacao: esquemas.SolicitacaoCreate,
+    db: Session = Depends(get_db),
+    condominio: tabelas.Condominio = Depends(obter_condominio_atual),  # ALTERAÇÃO: exige login
+):
+    # ALTERAÇÃO (isolamento): o morador precisa pertencer ao condomínio logado. Sem isso, dava para
+    # abrir um chamado usando o morador de outro condomínio.
+    morador = db.query(tabelas.Morador).filter(
+        tabelas.Morador.id == solicitacao.morador_id,
+        tabelas.Morador.condominio_id == condominio.id,
+    ).first()
+    if not morador:
+        raise HTTPException(status_code=404, detail="Morador não encontrado.")
+
     nova_solicitacao = tabelas.Solicitacao(
-        **solicitacao.model_dump(),
-        status=esquemas.StatusEnum.iniciado
+        condominio_id=condominio.id,  # ALTERAÇÃO: vem do token
+        morador_id=morador.id,
+        descricao=solicitacao.descricao,
+        status=esquemas.StatusEnum.iniciado.value,
     )
     db.add(nova_solicitacao)
     db.commit()
     db.refresh(nova_solicitacao)
 
-    # 1. LOG DE AUDITORIA: Registro de criação do chamado
     log_auditoria = tabelas.AuditLog(
-        condominio_id=nova_solicitacao.condominio_id,
-        usuario_responsavel=f"Morador ID: {nova_solicitacao.morador_id}", # Ou o e-mail do usuário no futuro
+        condominio_id=condominio.id,
+        usuario_responsavel=condominio.email,  # ALTERAÇÃO: quem realmente fez a ação
         acao="CRIAR_CHAMADO",
         tabela_afetada="solicitacoes",
         registro_id=nova_solicitacao.id,
         detalhes={
-            "morador_id": nova_solicitacao.morador_id,
+            "morador_id": morador.id,
             "descricao": nova_solicitacao.descricao,
-            "status_inicial": nova_solicitacao.status
-        }
+            "status_inicial": nova_solicitacao.status,
+        },
     )
     db.add(log_auditoria)
     db.commit()
@@ -37,43 +54,49 @@ def abrir_solicitacao(solicitacao: esquemas.SolicitacaoCreate, db: Session = Dep
     return nova_solicitacao
 
 
-# Rota 2: Atualizar Status do Chamado (Com Auditoria guardando Antes vs Depois)
+# Rota 2: Atualizar Status do Chamado (auditoria guarda antes e depois)
 @router.patch("/{chamado_id}/status", response_model=esquemas.SolicitacaoResponse)
-def atualizar_status_chamado(chamado_id: int, dados: esquemas.SolicitacaoUpdateStatus, db: Session = Depends(get_db)):
-    chamado = db.query(tabelas.Solicitacao).filter(tabelas.Solicitacao.id == chamado_id).first()
+def atualizar_status_chamado(
+    chamado_id: int,
+    dados: esquemas.SolicitacaoUpdateStatus,
+    db: Session = Depends(get_db),
+    condominio: tabelas.Condominio = Depends(obter_condominio_atual),
+):
+    # ALTERAÇÃO (isolamento): busca pelo id E pelo condomínio logado. Se o chamado é de outro
+    # condomínio, a resposta é 404, como se ele não existisse (não revela que existe).
+    chamado = db.query(tabelas.Solicitacao).filter(
+        tabelas.Solicitacao.id == chamado_id,
+        tabelas.Solicitacao.condominio_id == condominio.id,
+    ).first()
     if not chamado:
         raise HTTPException(status_code=404, detail="Chamado não encontrado.")
-    
-    # Guarda o status anterior antes de fazer a alteração no objeto
+
     status_anterior = chamado.status
+    chamado.status = dados.status.value
 
-    # Atualiza o status com o novo valor
-    chamado.status = dados.status.value if hasattr(dados.status, 'value') else dados.status
-
-    # 2. LOG DE AUDITORIA: Registra a mudança de estado e quem solicitou/alterou
     log_auditoria = tabelas.AuditLog(
-        condominio_id=chamado.condominio_id,
-        usuario_responsavel="Sistema / Síndico / n8n", # Quando integrar com autenticação/n8n passa o identificador
+        condominio_id=condominio.id,
+        usuario_responsavel=condominio.email,  # ALTERAÇÃO
         acao="ATUALIZAR_STATUS_CHAMADO",
         tabela_afetada="solicitacoes",
         registro_id=chamado.id,
-        detalhes={
-            "status_anterior": status_anterior,
-            "status_novo": chamado.status
-        }
+        detalhes={"status_anterior": status_anterior, "status_novo": chamado.status},
     )
     db.add(log_auditoria)
-    
     db.commit()
     db.refresh(chamado)
-    
-    # É aqui que no futuro colocamos o disparo para o webhook do n8n avisar o WhatsApp!
-    
+
+    # Aqui, no futuro, entra o disparo do webhook do n8n para avisar o morador no WhatsApp.
     return chamado
 
 
-# Rota 3: Listar Chamados (Sem auditoria, pois é apenas leitura GET)
+# Rota 3: Listar Chamados (apenas leitura)
 @router.get("/", response_model=list[esquemas.SolicitacaoResponse])
-def listar_todos_chamados(db: Session = Depends(get_db)):
-    chamados = db.query(tabelas.Solicitacao).all()
-    return chamados
+def listar_chamados(
+    db: Session = Depends(get_db),
+    condominio: tabelas.Condominio = Depends(obter_condominio_atual),
+):
+    # ALTERAÇÃO (isolamento): só os chamados do condomínio logado (antes devolvia os de todos).
+    return db.query(tabelas.Solicitacao).filter(
+        tabelas.Solicitacao.condominio_id == condominio.id
+    ).all()

@@ -2,10 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta, timezone # dicionado 'timezone'
+from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 import jwt
-from app.database import engine
+# ALTERAÇÃO: usa o get_db do database.py. Antes havia uma cópia aqui, com outro jeito de abrir a sessão.
+from app.database import get_db
 from app.models import tabelas
 import os
 from dotenv import load_dotenv
@@ -17,39 +18,38 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "chave_padrao_caso_nao_encontre_o_env")
+# ALTERAÇÃO (segurança): antes, se a SECRET_KEY faltasse no .env, o sistema subia com uma chave
+# padrão escrita no código, e qualquer pessoa conseguiria forjar tokens. Agora ele não sobe sem a chave.
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("Defina a variável SECRET_KEY no arquivo .env")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+
 
 # Funções auxiliares de segurança
 def verificar_senha(senha_pura, senha_criptografada):
     return pwd_context.verify(senha_pura, senha_criptografada)
 
+
 def gerar_senha_criptografada(senha):
     return pwd_context.hash(senha)
 
+
 def criar_token_acesso(data: dict):
     dados_para_criptografar = data.copy()
-    # Uso atualizado de fuso horário UTC (compatível com Python 3.12+)
     tempo_expiracao = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     dados_para_criptografar.update({"exp": tempo_expiracao})
     return jwt.encode(dados_para_criptografar, SECRET_KEY, algorithm=ALGORITHM)
 
-def get_db():
-    db = Session(bind=engine)
-    try:
-        yield db
-    finally:
-        db.close()
 
-# ROTA DE LOGIN PROFISSIONAL (Com Auditoria de Sucesso e Falha!)
+# ROTA DE LOGIN (com auditoria de sucesso e falha)
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     condominio = db.query(tabelas.Condominio).filter(tabelas.Condominio.email == form_data.username).first()
-    
-    # 1. FALHA NO LOGIN (Senha errada ou usuário inexistente)
+
+    # 1. FALHA NO LOGIN (senha errada ou usuário inexistente)
     if not condominio or not verificar_senha(form_data.password, condominio.senha):
-        # Se o condomínio existir, salvamos o log de tentativa frustrada
         if condominio:
             log_falha = tabelas.AuditLog(
                 condominio_id=condominio.id,
@@ -67,11 +67,10 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="E-mail ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        
+
     # 2. LOGIN COM SUCESSO
     token_acesso = criar_token_acesso(data={"sub": condominio.email, "id": condominio.id})
-    
-    # LOG DE AUDITORIA: Registra que o login foi realizado com sucesso
+
     log_sucesso = tabelas.AuditLog(
         condominio_id=condominio.id,
         usuario_responsavel=condominio.email,
@@ -82,15 +81,15 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     )
     db.add(log_sucesso)
     db.commit()
-    
-    # RETORNO COM O ID DO CONDOMÍNIO INCLUÍDO
+
     return {
-        "access_token": token_acesso, 
+        "access_token": token_acesso,
         "token_type": "bearer",
         "condominio_id": condominio.id
     }
 
-# FUNÇÃO DE DEPENDÊNCIA
+
+# DEPENDÊNCIA que identifica o condomínio logado pelo token. As rotas protegidas usam esta função.
 def obter_condominio_atual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credenciais_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -101,15 +100,15 @@ def obter_condominio_atual(token: str = Depends(oauth2_scheme), db: Session = De
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         condominio_id: int = payload.get("id")
-        
+
         if email is None or condominio_id is None:
             raise credenciais_exception
-            
+
     except jwt.PyJWTError:
         raise credenciais_exception
-        
+
     condominio = db.query(tabelas.Condominio).filter(tabelas.Condominio.id == condominio_id).first()
     if condominio is None:
         raise credenciais_exception
-        
+
     return condominio
