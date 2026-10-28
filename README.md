@@ -1,12 +1,12 @@
 
 
-# 🏢 Condomínio Inovador 
+# Condomínio Inovador 
 
 O **Condomínio Inovador** é um ecossistema completo voltado para a gestão operacional, segurança e automação de condomínios inteligentes. O sistema é composto por uma API robusta de alta performance (Back-end) integrada a um banco de dados relacional e protegida por autenticação moderna, além de um painel administrativo intuitivo (Front-end/Dashboard) projetado para o dia a dia do síndico.
 
 ---
 
-## 🚀 Funcionalidades Chave
+## Funcionalidades Chave
 
 * **Autenticação Segura (JWT):** Sistema de login profissional utilizando criptografia de senhas (`bcrypt`) e emissão de Tokens JWT (JSON Web Tokens) com tempo de expiração dinâmico.
 * **Sistema de Auditoria Interna (Audit Logs):** Registra e rastreia em banco de dados eventos críticos de segurança e operações (como tentativas de login com sucesso ou falha, com detalhes de quem executou, ação realizada, tabela afetada e horário).
@@ -16,10 +16,11 @@ O **Condomínio Inovador** é um ecossistema completo voltado para a gestão ope
 * **Catálogo de Prestadores:** Registro organizado de profissionais parceiros vinculados aos condomínios por categoria de especialidade.
 * **Interface do Síndico (Dashboard):** Painel interativo com navegação por abas para busca, gerenciamento e visualização de dados via tabelas integradas.
 * **Documentação Automática:** Roteamento com interface interativa (Swagger UI) integrada no FastAPI para testes em tempo real de todos os endpoints.
+* **Infraestrutura Conteinerizada** (Docker): Projeto totalmente estruturado com Dockerfile e docker-compose para orquestração simplificada da API e do banco de dados PostgreSQL em ambientes de desenvolvimento e produção.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 * **Linguagem:** Python 3.13
 * **Framework Web (API):** FastAPI
@@ -28,10 +29,11 @@ O **Condomínio Inovador** é um ecossistema completo voltado para a gestão ope
 * **ORM / Conexão:** SQLAlchemy
 * **Segurança:** PyJWT & Passlib (Bcrypt)
 * **Configurações:** `python-dotenv` para gerenciamento seguro de variáveis de ambiente
+* **Conteinerização:** Docker & Docker Compose
 
 ---
 
-## 🔑 Boas Práticas de Segurança e Arquitetura
+## Boas Práticas de Segurança e Arquitetura
 O projeto foi estruturado seguindo padrões rigorosos de desenvolvimento de software:
 * **Isolamento de Credenciais:** Chaves críticas como `SECRET_KEY` e tempo de expiração de tokens são gerenciadas fora do código-fonte através de arquivos `.env` e protegidas via `.gitignore`.
 * **Separação de Camadas:** Arquitetura limpa dividida em Roteadores (`routers`), Modelos de Banco (`models`), Esquemas de Validação (`schemas`) e o Painel Visual (`dashboard.py`).
@@ -40,7 +42,7 @@ O projeto foi estruturado seguindo padrões rigorosos de desenvolvimento de soft
 
 ---
 
-## 🔧 Como Executar o Projeto (Desenvolvimento Local)
+## Como Executar o Projeto (Desenvolvimento Local)
 
 ### 1. Configurar as Variáveis de Ambiente
 Crie um arquivo chamado `.env` na raiz do seu projeto e insira suas configurações confidenciais:
@@ -53,7 +55,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 ---
 
-2. Rodar o Backend (FastAPI)
+### 2. Rodar o Backend (FastAPI)
 
 Com o seu ambiente virtual ativo e as dependências instaladas, inicialize o servidor Uvicorn:
 
@@ -61,7 +63,7 @@ uvicorn app.main:app --reload
 
 ---
 
-3. Rodar o Dashboard (Streamlit)
+### 3. Rodar o Dashboard (Streamlit)
    
 Em outro terminal (também com a venv ativa), initialize o painel visual do síndico:
 
@@ -69,7 +71,17 @@ streamlit run dashboard.py
 
 ---
 
-👤 Desenvolvedora
+## Execução com Docker
+
+O projeto já conta com arquivos de configuração para rodar a aplicação e o banco PostgreSQL em contêineres isolados:
+
+Subir a API e o banco de dados PostgreSQL
+docker compose up -d
+
+---
+
+
+Desenvolvedora
 Andrea Da Cruz Leonardo 
 
 Desenvolvendo soluções inteligentes, seguras e prontas para o futuro da automação.
