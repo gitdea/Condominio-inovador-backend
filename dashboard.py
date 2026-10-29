@@ -7,6 +7,85 @@ import streamlit as st
 # Configuração da página
 st.set_page_config(page_title="Condomínio Inovador - Painel", page_icon="🏢", layout="wide")
 
+st.markdown("""
+    <style>
+        /* 1. Fundo de toda a aplicação em Verde Musgo */
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+            background-color: #2D4A3E !important;
+        }
+
+        /* 2. Textos gerais, títulos e rótulos em Branco/Claro */
+        .stApp, .stApp p, .stApp span, .stApp label, h1, h2, h3, h4, h5, h6 {
+            color: #FFFFFF !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* 3. Estilização dos Formulários/Cartões internos */
+        [data-testid="stForm"] {
+            background-color: #233C32 !important;
+            border: 1px solid #3A5F50 !important;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        /* 4. Estilização das Abas (Tabs) */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: transparent !important;
+            gap: 10px;
+        }
+
+        .stTabs [data-baseweb="tab"] {
+            background-color: #233C32 !important;
+            border-radius: 6px 6px 0px 0px;
+            color: #CCCCCC !important;
+            padding: 10px 20px;
+            border-bottom: 2px solid transparent !important;
+        }
+
+        .stTabs [aria-selected="true"] {
+            background-color: #3A5F50 !important;
+            color: #FFFFFF !important;
+            border-bottom: 2px solid #558571 !important;
+            font-weight: bold;
+        }
+
+        /* 5. Botões: Fundo Branco e Texto em Verde Musgo Escuro */
+        .stButton button, [data-testid="stFormSubmitButton"] button {
+            background-color: #FFFFFF !important;
+            color: #2D4A3E !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: bold !important;
+        }
+
+        .stButton button p, [data-testid="stFormSubmitButton"] button p {
+            color: #2D4A3E !important;
+        }
+
+        .stButton button:hover, [data-testid="stFormSubmitButton"] button:hover {
+            background-color: #E6E6E6 !important;
+            color: #1A2E26 !important;
+        }
+
+        .stButton button:hover p, [data-testid="stFormSubmitButton"] button:hover p {
+            color: #1A2E26 !important;
+        }
+
+        /* 6. Inputs e Caixas de Texto com fundo escuro e texto claro */
+        input, textarea, select {
+            background-color: #1A2E26 !important;
+            color: #FFFFFF !important;
+            border: 1px solid #3A5F50 !important;
+            border-radius: 5px !important;
+        }
+
+        /* 7. Ajuste de cor do subtítulo do usuário e legendas */
+        .stCaption, [data-testid="stCaptionContainer"] {
+            color: #D1E0D9 !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # ALTERAÇÃO: o endereço da API agora pode vir da variável BACKEND_URL (para publicar sem mudar o código).
 # Sem a variável, usa a API local.
 API_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
@@ -70,7 +149,7 @@ def mensagem_erro(resposta):
 
 # TELA DE AUTENTICAÇÃO (Login ou Cadastro)
 if not st.session_state.logado:
-    st.markdown("<h2 style='text-align: center;'>🏢 Condomínio Inovador</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'> Condomínio Inovador</h2>", unsafe_allow_html=True)
 
     if st.session_state.aviso:
         st.warning(st.session_state.aviso)
@@ -83,7 +162,7 @@ if not st.session_state.logado:
 
         # FLUXO DE LOGIN
         with aba_entrar:
-            st.markdown("<h4 style='color: gray;'>Painel de Acesso do Síndico</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color: #FFFFFF;'>Painel de Acesso do Síndico</h4>", unsafe_allow_html=True)
             with st.form("form_login"):
                 email_input = st.text_input("E-mail:")
                 senha_input = st.text_input("Senha:", type="password")
@@ -102,11 +181,8 @@ if not st.session_state.logado:
                                 st.session_state.logado = True
                                 st.session_state.token = dados_token.get("access_token")
                                 st.session_state.usuario_email = email_input
-                                # ALTERAÇÃO: antes, se a API não devolvesse o id, o painel assumia o condomínio 1
-                                # (dados_token.get("condominio_id", 1)). Isso podia mostrar o condomínio errado.
                                 st.session_state.condominio_id = dados_token.get("condominio_id")
 
-                                # Busca o nome do condomínio uma vez, para mostrar no topo do painel.
                                 dados_condominio = chamar_api("GET", "/condominios/me")
                                 if dados_condominio is not None and dados_condominio.status_code == 200:
                                     st.session_state.condominio_nome = dados_condominio.json().get("nome", "")
@@ -122,12 +198,11 @@ if not st.session_state.logado:
                     else:
                         st.error("Por favor, preencha o e-mail e a senha.")
 
-        # FLUXO DE CADASTRO INICIAL (público: é assim que um condomínio novo entra no sistema)
+        # FLUXO DE CADASTRO INICIAL
         with aba_registrar:
-            st.markdown("<h4 style='color: gray;'>Criar Conta do Síndico / Condomínio</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color: #FFFFFF;'>Criar Conta do Síndico / Condomínio</h4>", unsafe_allow_html=True)
             with st.form("form_cadastro_inicial", clear_on_submit=True):
                 nome_condominio = st.text_input("Nome do Condomínio:")
-                # ALTERAÇÃO: o rótulo mudou, porque a API agora valida os dígitos do CNPJ e aceita com ou sem pontuação.
                 cnpj_condominio = st.text_input("CNPJ:")
                 endereco_condominio = st.text_input("Endereço Completo:")
                 email_condominio = st.text_input("Seu E-mail (Será seu usuário de login):")
@@ -168,8 +243,6 @@ else:
             sair()
             st.rerun()
 
-    # ALTERAÇÃO: a aba "Condomínios" (que cadastrava outro condomínio) virou "Meu Condomínio", com os dados da
-    # conta e o histórico de auditoria. Cadastrar um condomínio novo continua na tela de login.
     aba_chamados, aba_moradores, aba_prestadores, aba_condominio = st.tabs([
         "📝 Chamados",
         "👥 Moradores",
@@ -181,8 +254,6 @@ else:
     with aba_chamados:
         st.header("Histórico e Evolução de Chamados")
         if st.button("Carregar Chamados Deste Condomínio", type="primary"):
-            # ALTERAÇÃO (isolamento): a API já devolve só os chamados do condomínio logado, então o filtro
-            # que existia aqui com pandas (condominio_id == ...) deixou de ser necessário.
             response = chamar_api("GET", "/chamados/")
             if response is not None:
                 if response.status_code == 200:
@@ -209,7 +280,6 @@ else:
 
             if enviar_morador:
                 if nome_morador and bloco_morador and ap_morador and whatsapp_morador:
-                    # ALTERAÇÃO (isolamento): o condominio_id saiu do payload. A API pega do token.
                     payload = {
                         "nome": nome_morador,
                         "bloco": bloco_morador,
@@ -251,7 +321,6 @@ else:
 
             if enviar_prestador:
                 if nome_prestador and categoria_prestador and telefone_prestador:
-                    # ALTERAÇÃO (isolamento): sem condominio_id no payload.
                     payload = {
                         "nome": nome_prestador,
                         "categoria": categoria_prestador,
@@ -262,7 +331,6 @@ else:
                         if response.status_code in [200, 201]:
                             st.success(f"Prestador '{nome_prestador}' cadastrado com sucesso!")
                         else:
-                            # ALTERAÇÃO: antes, se a API recusasse, o painel não mostrava nenhum aviso.
                             st.error(mensagem_erro(response))
                 else:
                     st.error("Preencha todos os campos.")
