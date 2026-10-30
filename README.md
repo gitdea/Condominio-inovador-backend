@@ -4,33 +4,42 @@
 
 API de gestão de condomínios com painel para o síndico. Cada condomínio entra com o próprio login e enxerga apenas os seus dados: moradores, prestadores de serviço e chamados (ordens de serviço), com um histórico de auditoria de tudo o que acontece na conta.
 
-O back-end é uma API em FastAPI com PostgreSQL, e o painel é feito em Streamlit.
+🔗 **Teste online:** [painel do síndico](https://condominio-inovador-backend-h2ll93zfhvph8itg27exwp.streamlit.app/)
 
 ## O que o projeto faz?
 * **Login com JWT:** as senhas são guardadas com `bcrypt`, e o login devolve um token com tempo de expiração (30 minutos por padrão).
-* **Isolamento entre condomínios (multitenant):** todas as rotas, exceto o login e o cadastro de condomínio, exigem o token. O condomínio é descoberto **pelo token**, e nunca por um número enviado na requisição. Um condomínio que tenta ler ou alterar dados de outro recebe a resposta "não encontrado" (404).
+* **Isolamento entre condomínios (multitenant):** todas as rotas, exceto o login e o cadastro de condomínio, exigem o token. O condomínio é descoberto pelo token, e nunca por um número enviado na requisição. Quem tenta ler ou alterar dados de outro condomínio recebe "não encontrado" (404).
 * **CNPJ validado:** o cadastro confere os dois dígitos verificadores, guarda o CNPJ sempre no formato `00.000.000/0000-00` e recusa CNPJs repetidos, mesmo digitados com outra pontuação.
-* **Chamados (ordens de serviço):** abertura e atualização de status (Iniciado, Em andamento, Cancelado e Concluído com sucesso). O morador do chamado precisa pertencer ao condomínio logado.
-* **Moradores e prestadores de serviço:** cadastro e listagem por condomínio. O WhatsApp do morador é único.
-* **Auditoria:** registra os logins (com sucesso e com falha), as criações e as mudanças de status, com o e-mail de quem fez a ação. Na mudança de status, o log guarda o valor **antes e depois**. Cada condomínio consulta só o próprio histórico.
+* **Chamados (ordens de serviço):** a API abre chamados e atualiza o status (Iniciado, Em andamento, Cancelado e Concluído com sucesso). O morador do chamado precisa pertencer ao condomínio logado.
+* **Moradores e prestadores de serviço:** cadastro e listagem por condomínio.
+* **Auditoria:** registra os logins (com sucesso e com falha), as criações e as mudanças de status, com o e-mail de quem fez a ação. Na mudança de status, o log guarda o valor antes e depois. Cada condomínio consulta só o próprio histórico, com paginação.
 * **Painel do síndico (Streamlit):** login, cadastro de moradores e prestadores, lista de chamados e consulta da auditoria.
 * **Documentação automática:** o Swagger fica em `/docs`, e dá para testar todas as rotas por ele.
 * **Testes automatizados:** 17 testes com `pytest` provam o isolamento entre condomínios, o login, a validação do CNPJ e a auditoria.
+
+## Demonstração online
+
+O painel está publicado e pode ser testado sem instalar nada. Ele roda no Streamlit, a API no Render e o banco é um PostgreSQL na nuvem.
+
+1. Abra o [painel online](https://condominio-inovador-backend-h2ll93zfhvph8itg27exwp.streamlit.app/). Os servidores gratuitos "dormem" quando ficam sem uso, então o primeiro acesso pode levar cerca de um minuto.
+2. Na aba **Cadastrar-se**, crie um condomínio de teste com **dados fictícios**. Para o CNPJ, use um de teste com dígitos válidos, como `11.222.333/0001-81`. Cada CNPJ só pode ser usado uma vez, então, se ele já estiver em uso, tente `12.345.678/0001-95` ou `10.000.000/0001-45`.
+3. Entre com o e-mail e a senha que você criou. Cadastre moradores e prestadores, veja a lista de chamados e o histórico de auditoria.
+
+> **Demonstração pública:** use apenas dados fictícios. Não informe e-mails, telefones nem senhas reais. Cada condomínio vê só os próprios dados, mas tudo fica registrado no servidor e pode ser apagado a qualquer momento.
 
 ## Quais tecnologias foram usadas?
 * **Python 3.13 e FastAPI:** a API.
 * **PostgreSQL e SQLAlchemy:** o banco de dados e o acesso a ele.
 * **PyJWT e Passlib (bcrypt):** o login e a criptografia das senhas.
 * **Pydantic:** a validação dos dados, incluindo o CNPJ.
-* **Streamlit:** o painel do síndico.
+* **Streamlit, Pandas e Requests:** o painel do síndico.
 * **Pytest e HTTPX:** os testes automatizados.
 * **python-dotenv:** as variáveis de ambiente, fora do código.
-* **Docker e Docker Compose:** arquivos preparados (veja a seção sobre Docker).
 
 ## Como o isolamento funciona
 1. O síndico faz login em `POST /auth/login` e recebe um token.
 2. Nas outras rotas, a função `obter_condominio_atual` lê o token e carrega o condomínio logado.
-3. Toda consulta filtra por esse condomínio. Exemplo: para alterar um chamado, a busca é por `id` **e** `condominio_id`. Se o chamado é de outro condomínio, ele simplesmente não é encontrado.
+3. Toda consulta filtra por esse condomínio. Exemplo: para alterar um chamado, a busca é por `id` **e** `condominio_id`. Se o chamado é de outro condomínio, ele não é encontrado.
 
 ## Principais rotas
 
@@ -39,7 +48,7 @@ O back-end é uma API em FastAPI com PostgreSQL, e o painel é feito em Streamli
 | `POST /auth/login` | Entra e recebe o token | Não |
 | `POST /condominios/` | Cadastra um condomínio novo | Não |
 | `GET /condominios/me` | Dados do condomínio logado | Sim |
-| `GET /condominios/me/auditoria` | Histórico de auditoria (com paginação) | Sim |
+| `GET /condominios/me/auditoria` | Histórico de auditoria | Sim |
 | `POST /moradores/` e `GET /moradores/` | Cadastra e lista moradores | Sim |
 | `GET /moradores/buscar?whatsapp=` | Busca um morador pelo WhatsApp | Sim |
 | `POST /prestadores/` e `GET /prestadores/` | Cadastra e lista prestadores | Sim |
@@ -99,36 +108,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Os testes usam um **banco SQLite temporário**, criado do zero a cada teste. Eles não tocam no banco do seu `.env`. Há também uma trava que interrompe os testes se o banco não for SQLite.
-
-Para criar condomínios de teste, use CNPJs com dígitos verificadores válidos, como `11.222.333/0001-81` e `12.345.678/0001-95`.
-
-## Docker (preparado, ainda não testado)
-
-O projeto tem `Dockerfile`, `docker-compose.yml` e `.dockerignore`, preparados para subir a API e o PostgreSQL em contêineres:
-
-```bash
-docker compose up --build
-```
-
-O compose lê o `.env` (escreva a `SECRET_KEY` sem aspas), usa um banco próprio e publica o PostgreSQL na porta 5433, para não conflitar com um PostgreSQL local. **Esses arquivos ainda não foram executados**, então podem precisar de ajustes. O compose também está configurado para desenvolvimento (com `--reload`), e não para produção.
-
-## Limitações conhecidas
-* **O cadastro de condomínio é público:** qualquer pessoa pode criar uma conta. Falta um convite ou um limite de cadastros.
-* **Há um login por condomínio** (o do síndico). Não existem perfis de acesso para moradores ou porteiros.
-* **Integração com n8n:** os fluxos precisam enviar o token nas chamadas, e esse caminho (um login de serviço, por exemplo) ainda não foi montado.
-* **O WhatsApp do morador é único no banco inteiro,** e não por condomínio.
-* **Qualquer status pode virar qualquer outro:** um chamado concluído pode voltar para "Iniciado". Falta definir as transições permitidas.
-* **O CORS está liberado** para qualquer origem, e não há limite de tentativas de login.
-* **As tabelas são criadas com `create_all`,** e não por migrações (Alembic).
-* Os testes mostram avisos de código antigo (`class Config` do Pydantic e `datetime.utcnow`), que ainda funcionam.
-
-## Próximos passos
-* Login de serviço para o n8n e aviso ao morador pelo WhatsApp quando o status do chamado mudar.
-* Regras de transição de status e perfis de acesso (síndico, porteiro, morador).
-* Limite de tentativas de login e convite para novos condomínios.
-* Migrações com Alembic e testes rodando automaticamente no GitHub Actions.
-* Testar o Docker de ponta a ponta.
+Os testes usam um banco SQLite temporário, criado do zero a cada teste, e não tocam no banco do seu `.env`.
 
 ## Autora
 **Andrea Cruz Leonardo**: Desenvolvedora Back-End Python
