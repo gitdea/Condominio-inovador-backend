@@ -110,6 +110,16 @@ pytest
 
 Os testes usam um banco SQLite temporário, criado do zero a cada teste, e não tocam no banco do seu `.env`.
 
+## Próximos passos
+* Avisar o morador no WhatsApp, pelo n8n, quando o status do chamado mudar.
+* Abertura de chamados e mudança de status direto pelo painel.
+* Perfis de acesso (síndico, porteiro e morador).
+* Regras para as mudanças de status dos chamados.
+* Limite de tentativas de login.
+* Migrações do banco com Alembic.
+* Testes rodando automaticamente no GitHub Actions.
+* Execução em contêineres com Docker.
+
 ## Autora
 **Andrea Cruz Leonardo**: Desenvolvedora Back-End Python
 [LinkedIn](https://www.linkedin.com/in/andrea-cruz-leonardo/) · [GitHub](https://github.com/gitdea) · [Portfólio](https://gitdea.github.io/portfolio/)
