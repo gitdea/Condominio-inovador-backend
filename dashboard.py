@@ -1,5 +1,6 @@
 
 import os
+import json
 import requests
 import pandas as pd
 import streamlit as st
@@ -86,8 +87,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ALTERAÇÃO: o endereço da API agora pode vir da variável BACKEND_URL (para publicar sem mudar o código).
-# Sem a variável, usa a API local.
 API_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 TIMEOUT = 30  # segundos de espera por resposta da API
 
@@ -114,8 +113,6 @@ def sair(aviso=None):
     st.session_state.aviso = aviso
 
 
-# ALTERAÇÃO (autenticação): todas as chamadas ao painel passam por esta função, que envia o token no
-# cabeçalho Authorization. A API agora exige o token para saber de qual condomínio são os dados.
 def chamar_api(metodo, caminho, **kwargs):
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     try:
@@ -124,14 +121,11 @@ def chamar_api(metodo, caminho, **kwargs):
         st.error("Não foi possível conectar à API. Tente novamente em instantes.")
         return None
     if resposta.status_code == 401:
-        # Token inválido ou expirado: volta para a tela de login com um aviso.
         sair("Sua sessão expirou. Entre novamente.")
         st.rerun()
     return resposta
 
 
-# ALTERAÇÃO (erros): mostra a mensagem que a API devolveu (por exemplo "CNPJ inválido.") em vez de só o
-# número do status.
 def mensagem_erro(resposta):
     try:
         detalhe = resposta.json().get("detail")
@@ -367,7 +361,36 @@ else:
                 if response.status_code == 200:
                     logs = response.json()
                     if logs:
-                        st.dataframe(pd.DataFrame(logs), use_container_width=True)
+                        df_logs = pd.DataFrame(logs)
+                        
+                        # Remove a coluna condominio_id para não poluir a tela
+                        df_exibicao = df_logs.drop(columns=["condominio_id"], errors="ignore")
+                        
+                        # Função para formatar os detalhes JSON de forma limpa e legível
+                        def formatar_detalhes(detalhes):
+                            if not detalhes:
+                                return ""
+                            try:
+                                dados_json = json.loads(detalhes) if isinstance(detalhes, str) else detalhes
+                                if isinstance(dados_json, dict):
+                                    return ", ".join([f"{k}: {v}" for k, v in dados_json.items()])
+                                return str(detalhes)
+                            except:
+                                return str(detalhes)
+
+                        if "detalhes" in df_exibicao.columns:
+                            df_exibicao["detalhes"] = df_exibicao["detalhes"].apply(formatar_detalhes)
+                        
+                        # Renomeia os cabeçalhos das colunas para português amigável
+                        df_exibicao = df_exibicao.rename(columns={
+                            "usuario_responsavel": "Usuário",
+                            "acao": "Ação",
+                            "tabela_afetada": "Tabela",
+                            "registro_id": "ID do Registro",
+                            "detalhes": "Detalhes"
+                        })
+
+                        st.dataframe(df_exibicao, use_container_width=True, hide_index=True)
                     else:
                         st.info("Ainda não há registros de auditoria.")
                 else:
